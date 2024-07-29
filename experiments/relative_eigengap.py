@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     # North's rule-of-thumb
     plt.loglog(n_list, (2 * np.sqrt(2 / n_list)) / (1 + np.sqrt(2 / n_list)), linewidth=3, label="NRT", color=cmap(10/10))
-    plt.loglog(n_list, 2 * (2 * np.sqrt(2 / n_list)) / (1 + np.sqrt(2 / n_list)), linewidth=3, color=cmap(10/10))
+    plt.loglog(n_list, (4 * np.sqrt(2 / n_list)) / (1 + 2 * np.sqrt(2 / n_list)), linewidth=3, color=cmap(10/10))
 
     # AIC
     phi_aic = 4 / n_list
