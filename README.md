@@ -1,6 +1,6 @@
 # principal-subspace-analysis
 
-Authors' implementation of the preprint _The curse of isotropy: from principal components to principal subspaces_.
+Authors' implementation of [_The curse of isotropy: from principal components to principal subspaces_](https://arxiv.org/abs/2307.15348).
 
 ![A typical example of Principal Subspace Analysis pipeline](PSA_patch8.svg)
 
@@ -12,6 +12,7 @@ We raise an important issue (the _curse of isotropy_) about the rotational-invar
 We explicitly quantify what "close" means using the principle of parsimony.
 We show on real data that the curse of isotropy is not a negligible phenomenon and that particular care should be taken in the interpretation of the associated principal components.
 In this context, we propose to transition from fuzzy principal components to more-interpretable principal subspaces.
+
 
 ## Methodology
 
@@ -53,7 +54,9 @@ for i, phi in enumerate(np.linspace(0, np.pi, 10)):
 ```
 We notice the emergence of low-frequency feature subspaces with rotational invariance.
 
+
 ## Remarks
+
 - Many details about the methodology are provided in the **Supplementary Information (SI) Appendix** (notably some alternative model selection methods). 
 - In high dimensions, the classical trick of *covariance regularization* might be a good idea to prevent from small positive or null eigenvalues.
 Indeed, such eigenvalues can yield large relative eigengaps and cause automatic model selection methods to give poor results. 
@@ -64,6 +67,7 @@ You can use for instance the following script:
     ```
 - Eventually, trying some model types by hand based on the eigenvalue profile 
 and computing the associated BIC or AIC seems for now to be the most universal model selection heuristic. 
+
 
 ## Data
 
@@ -78,4 +82,21 @@ You can create a conda environment and then install the required packages by run
 ```python
 conda create -n principal-subspace-analysis python=3.9
 pip install -r requirements.txt
+```
+
+
+## Citation
+
+```bibtex
+@misc{szwagier_curse_2024,
+      title={The curse of isotropy: from principal components to principal subspaces}, 
+      author={Tom Szwagier and Xavier Pennec},
+      year={2024},
+      eprint={2307.15348},
+      archivePrefix={arXiv},
+      primaryClass={stat.ME},
+      url={https://arxiv.org/abs/2307.15348},
+      doi = {10.48550/arXiv.2307.15348},
+      keywords = {Principal Component Analysis, Isotropy, Interpretability, Parsimonious Models, Flag Manifolds},
+}
 ```

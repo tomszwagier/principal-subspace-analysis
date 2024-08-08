@@ -51,7 +51,7 @@ if __name__ == '__main__':
     np.set_printoptions(formatter={'float_kind':float_formatter})
     rowLabels = ['RI', 'Na', 'Mg', 'Al', 'Si', 'K', 'Ca', 'Ba', 'Fe']
     table = ax.table(cellText=np.round(np.concatenate([eigvec[:, :5], rotated_factors], axis=1)*100)/100, cellColours=plt.colormaps['coolwarm']((np.concatenate([eigvec_interp[:, :5], rotated_factors_interp], axis=1) + 1) / 2),
-    rowLabels=rowLabels, colLabels=['E1', 'E2', 'E3', 'E4', 'E5', 'R1', 'R2', 'R3', 'R4', 'R5'], loc='center', cellLoc='center')
+    rowLabels=rowLabels, colLabels=['PC1', 'PC2', 'PC3', 'PC4', 'PC5', 'RPC1', 'RPC2', 'RPC3', 'RPC4', 'RPC5'], loc='center', cellLoc='center')
     table.auto_set_font_size(False)
     table.set_fontsize(8)
     cells = table.properties()["celld"]
