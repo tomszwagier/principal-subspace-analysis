@@ -2,7 +2,7 @@
 
 Authors' implementation of [_The curse of isotropy: from principal components to principal subspaces_](https://arxiv.org/abs/2307.15348).
 
-![A typical example of Principal Subspace Analysis pipeline](PSA_patch8.svg)
+![A typical example of Principal Subspace Analysis pipeline](PSA_Laplacian.png)
 
 
 ## Significance statement
@@ -24,33 +24,27 @@ We recall the simple methodology of principal subspace analysis:
 
 ## Typical pipeline
 
-Consider a dataset of `n=500` `(8, 8)`-patches extracted from natural images of flowers, gathered in a data matrix `X` of shape `(500, 64)`.
+Consider a dataset of `n = 500` image patches with `64 * 64` pixels, gathered in a data matrix `X` of shape `(500, 4096)`.
 We perform the eigenvalue decomposition of the sample covariance matrix and plot the eigenvalue profile.
 ```python
 eigval, eigvec = evd(X)
 plt.bar(np.arange(p)[:25], eigval[:25], color='k')
 ```
-We notice that eigenvalues 1 and 2 are relatively close, as well as 3, 4 and 5. We are therefore tempted to fit a PSA model of type `(2, 3, 59)`.
-We check that this PSA model is indeed better than the associated PPCA model `(1, 1, 1, 1, 1, 59)` via the computation of the Bayesian information criterion (BIC).
+We notice that eigenvalues #2 and #3 are relatively close, as well as #5 and #6, and #7 and #8. We are therefore tempted to fit a PSA model of type `(1, 2, 1, 2, 2, 1, 4087)`.
+We check that this PSA model is indeed better than the associated PPCA model `(1, ..., 1, 4087)` via the computation of the Bayesian information criterion (BIC).
 ```python
-bic_psa  = bic(( 2,   3,   59), eigval, n)
-bic_ppca = bic((1,1,1,1,1, 59), eigval, n)
+bic_psa  = bic((1,  2,   1,  2,    2,   1, 4087), eigval, n)
+bic_ppca = bic((1, 1, 1, 1, 1, 1, 1, 1, 1, 4087), eigval, n)
 ```
 Finally, we explore the associated principal subspaces by uniform sampling.
-The first principal subspace is 2D. We sample uniformly some unit components on the 2-sphere.
+For instance, the second principal subspace is 2D, and we sample uniformly some 
+unit components on the 2-sphere.
 ```python
-fig, axes = plt.subplots(1, 25)
-for ax, theta in zip(axes, np.linspace(0, 2 * np.pi, 25)):
+fig, axes = plt.subplots(3, 25)
+for ax, theta in zip(axes[0], np.linspace(0, 2 * np.pi, 25)):
     x, y = np.cos(theta), np.sin(theta)
-    ax.imshow((x * eigvec[:, 0] + y * eigvec[:, 1]).reshape(patchsize, patchsize))
-```
-The second principal subspace is 3D. We sample uniformly some unit components on the 3-sphere.
-```python
-fig, axes = plt.subplots(10, 25)
-for i, phi in enumerate(np.linspace(0, np.pi, 10)):
-    for ax, theta in zip(axes[i], np.linspace(0, 2 * np.pi, 25)):
-        x, y, z = np.sin(phi) * np.cos(theta), np.sin(phi) * np.sin(theta), np.cos(phi)
-        ax.imshow((x * eigvec[:, 2] + y * eigvec[:, 3] + z * eigvec[:, 4]).reshape(patchsize, patchsize))
+    ax.imshow((x * eigvec[:, 1] + y * eigvec[:, 2]).reshape(L, L))
+    ax.axis('off')
 ```
 We notice the emergence of low-frequency feature subspaces with rotational invariance.
 
