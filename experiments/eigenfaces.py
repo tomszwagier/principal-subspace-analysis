@@ -1,7 +1,7 @@
 """ This file implements the eigenface experiment with Principal Subspace Analysis.
 We first extract a dataset from the CMU Face images database (https://archive.ics.uci.edu/dataset/124/cmu+face+images).
 Then we compute the BIC of PPCA model of type (1, 1, 1, 1, 1, 1, 1, 1, 1, 3831) and compare it to a PSA model of type (1, 3, 5, 3831).
-The PSA model has a lower BIC, therefore we choose it. Eventually, we perform subspace exploration by sampling from
+The PSA model has a lower BIC, therefore we choose it. Eventually, we perform subspace ICA and subspace exploration by sampling from
 the second 3D principal subspace via the PSA generative model, and plot a few samples to gain intuition about the principal subspace.
 While eigenfaces are fuzzy being linear mixtures of images, principal subspace analysis enables to extract much more interpretable
 eigenfaces within the 3D principal subspace, corresponding to head rotation movements.
@@ -16,6 +16,7 @@ import os
 from skimage.io import imread
 from skimage.filters.rank import entropy
 from skimage.morphology import disk
+from sklearn.decomposition import FastICA
 
 from utils import evd, bic
 
@@ -68,4 +69,20 @@ if __name__ == "__main__":
         ax.set_xticklabels([])
         ax.set_yticklabels([])
         ax.axis('off')
+    plt.show()
+
+    # Perform ICA in the second principal subspace (3D)
+    ica = FastICA()
+    X_proj = (X - mu) @ eigvec[:, 1:4]
+    ica.fit(X_proj)
+    U_ica = ica.components_ @ eigvec[:, 1:4].T
+    fig, axes = plt.subplots(1, 3)
+    axes[0].imshow((mu+np.mean(eigval[1:4])*U_ica[0]).reshape(60, 64))
+    axes[1].imshow((mu+np.mean(eigval[1:4])*U_ica[1]).reshape(60, 64))
+    axes[2].imshow((mu+np.mean(eigval[1:4])*U_ica[2]).reshape(60, 64))
+    plt.show()
+    fig, axes = plt.subplots(1, 3)
+    axes[0].imshow((mu-np.mean(eigval[1:4])*U_ica[0]).reshape(60, 64))
+    axes[1].imshow((mu-np.mean(eigval[1:4])*U_ica[1]).reshape(60, 64))
+    axes[2].imshow((mu-np.mean(eigval[1:4])*U_ica[2]).reshape(60, 64))
     plt.show()

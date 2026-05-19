@@ -2,7 +2,7 @@
 We first extract a some patches of flower images from the Natural Images database (https://www.kaggle.com/datasets/prasunroy/natural-images).
 Then we compute the BIC of PPCA model of type (1, 1, 1, 1, 1, 251) and compare it to a PSA model of type (2, 3, 251).
 The PSA model has a lower BIC, therefore we choose it.
-Eventually, we perform subspace exploration by sampling uniformly from the 2-sphere and 3-sphere inside the principal subspaces.
+Eventually, we perform subspace ICA and subspace exploration by sampling uniformly from the 2-sphere and 3-sphere inside the principal subspaces.
 We notice the emergence of low-frequency feature subspaces with rotational invariance.
 """
 
@@ -14,6 +14,7 @@ import os
 from skimage import color
 from skimage import io
 from sklearn.feature_extraction.image import extract_patches_2d
+from sklearn.decomposition import FastICA
 
 from utils import evd, bic
 
@@ -35,11 +36,11 @@ if __name__ == "__main__":
 
     # Plot dataset
     fig, axes = plt.subplots(3, 3, figsize=(8, 8))
+    plt.set_cmap('coolwarm')
     for i, ax in enumerate(axes.flatten()):
-        ax.imshow(X[n//10 * i], cmap="gray")
+        ax.imshow(X[n//10 * i])
         ax.axis('off')
     fig.subplots_adjust(wspace=.1, hspace=.1)
-    plt.show()
 
     # Compute BIC of PPCA and PSA models
     X = X.reshape((n, patchsize*patchsize))
@@ -47,28 +48,68 @@ if __name__ == "__main__":
     eigval, eigvec = evd(X)
     plt.figure()
     plt.bar(np.arange(25), eigval[:25], color='k')
-    plt.show()
-    bic_psa = bic((2, 3, p - 5), eigval, n)
-    bic_ppca = bic((1, 1, 1, 1, 1, p - 5), eigval, n)
+    bic_psa = bic((2, 3, 4, p - 9), eigval, n)
+    bic_ppca = bic((1, 1, 1, 1, 1, 1, 1, 1, 1, p - 9), eigval, n)
 
     # Plot principal components
-    plt.set_cmap('gray')
     fig, axes = plt.subplots(1, 9)
     for j, ax in enumerate(axes):
         ax.imshow((eigvec[:, j]).reshape(patchsize, patchsize))
         ax.axis('off')
 
-    # Generate samples from the first principal subspace (2D)
-    fig, axes = plt.subplots(1, 25)
-    for ax, theta in zip(axes, np.linspace(0, 2 * np.pi, 25)):
+    # Generate samples from principal subspaces
+    fig, axes = plt.subplots(3, 20)
+    # PS1
+    for ax, theta in zip(axes[0], np.linspace(0, 2 * np.pi, 25)):
         x, y = np.cos(theta), np.sin(theta)
         ax.imshow((x * eigvec[:, 0] + y * eigvec[:, 1]).reshape(patchsize, patchsize))
         ax.axis('off')
+    # PS2
+    subspace_samples = np.random.multivariate_normal(mean=np.zeros((np.product((patchsize, patchsize)))), cov=np.mean(eigval[2:5]) * eigvec[:, 2:5] @ eigvec[:, 2:5].T, size=25)
+    subspace_samples = subspace_samples / np.linalg.norm(subspace_samples, axis=1)[:, np.newaxis]
+    for i, ax in enumerate(axes[1].flatten()):
+        ax.imshow((subspace_samples[i]).reshape(patchsize, patchsize))
+        ax.axis('off')
+    # PS3
+    subspace_samples = np.random.multivariate_normal(mean=np.zeros((np.product((patchsize, patchsize)))), cov=np.mean(eigval[5:9]) * eigvec[:, 5:9] @ eigvec[:, 5:9].T, size=25)
+    subspace_samples = subspace_samples / np.linalg.norm(subspace_samples, axis=1)[:, np.newaxis]
+    for i, ax in enumerate(axes[2].flatten()):
+        ax.imshow((subspace_samples[i]).reshape(patchsize, patchsize))
+        ax.axis('off')
 
-    # Generate samples from the second principal subspace (3D)
+    # Generate samples from the second principal subspace uniformly (3D)
     fig, axes = plt.subplots(10, 25)
     for i, phi in enumerate(np.linspace(0, np.pi, 10)):
         for ax, theta in zip(axes[i], np.linspace(0, 2 * np.pi, 25)):
             x, y, z = np.sin(phi) * np.cos(theta), np.sin(phi) * np.sin(theta), np.cos(phi)
             ax.imshow((x * eigvec[:, 2] + y * eigvec[:, 3] + z * eigvec[:, 4]).reshape(patchsize, patchsize))
             ax.axis('off')
+
+    # Plot rotated principal components (via ICA)
+    fig, axes = plt.subplots(1, 9)
+    ica = FastICA()
+    X_proj = X @ eigvec[:, :2]
+    ica.fit(X_proj)
+    U_ica = ica.components_ @ eigvec[:, :2].T
+    axes[0].imshow(U_ica[0].reshape(patchsize, patchsize))
+    axes[1].imshow(U_ica[1].reshape(patchsize, patchsize))
+    ica = FastICA()
+    X_proj = X @ eigvec[:, 2:5]
+    ica.fit(X_proj)
+    U_ica = ica.components_ @ eigvec[:, 2:5].T
+    axes[2].imshow(U_ica[0].reshape(patchsize, patchsize))
+    axes[3].imshow(U_ica[1].reshape(patchsize, patchsize))
+    axes[4].imshow(U_ica[2].reshape(patchsize, patchsize))
+    ica = FastICA()
+    X_proj = X @ eigvec[:, 5:9]
+    ica.fit(X_proj)
+    U_ica = ica.components_ @ eigvec[:, 5:9].T
+    axes[5].imshow(U_ica[0].reshape(patchsize, patchsize))
+    axes[6].imshow(U_ica[1].reshape(patchsize, patchsize))
+    axes[7].imshow(U_ica[2].reshape(patchsize, patchsize))
+    axes[8].imshow(U_ica[3].reshape(patchsize, patchsize))
+    for ax in axes:
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.axis('off')
+    plt.show()

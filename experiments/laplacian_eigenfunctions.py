@@ -3,7 +3,7 @@ We first generate a dataset similarly as in North et al.'s paper, i.e. linear co
 with variance being a decreasing function of the Laplacian eigenvalue.
 Then we compute the BIC of PPCA model of type (1, 1, 1, 1, 1, 1, 1, 1, 1, 4087) and compare it to a PSA model of type (1, 2, 1, 2, 2, 1, 4087).
 The PSA model has a lower BIC, therefore we choose it.
-Eventually, we perform factor rotation by projecting the original Laplacian eigenmodes onto the multidimensional principal subspaces.
+Eventually, we perform subspace ICA and factor rotation by projecting the original Laplacian eigenmodes onto the multidimensional principal subspaces.
 While principal components degenerate into quasimodes (random mixtures of eigenmodes), principal subspace analysis finds back
 components much closer to the original eigenmodes. We also perform subspace exploration by sampling uniformly from the 2-spheres inside
 the principal subspaces and get low-frequency feature subspaces.
@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
+from sklearn.decomposition import FastICA
 
 from utils import evd, bic
 
@@ -30,8 +31,8 @@ def generate_laplacian_data(size=500, L=64, order=3):
             lambda_nm = (n * np.pi / L) ** 2 + (m * np.pi / L) ** 2  # Laplacian eigenvalue
             u_nm = np.sin(n * np.pi * grid[0] / L) * np.sin(m * np.pi * grid[1] / L)  # Laplacian eigenfunction
             u_nm /= np.linalg.norm(u_nm)
-            modes.append(u_nm); variances.append(np.exp(- 50 * lambda_nm) ** 2 + 0.005 ** 2)
-            coeff = np.random.normal(0, np.exp(- 50 * lambda_nm), size=size)  # coefficient is drawn from a normal distribution with particular variance
+            modes.append(u_nm); variances.append(2 * np.exp(- 50 * lambda_nm) ** 2)
+            coeff = np.random.laplace(0, np.exp(- 50 * lambda_nm), size=size)  # coefficient is drawn from a laplace distribution with particular variance
             X_img += coeff[:, None, None] * u_nm
     X_img += np.random.normal(0, 0.005, size=X_img.shape)  # we add Gaussian noise with small variance
     modes = np.array(modes)[np.argsort(variances)[::-1]]
@@ -43,7 +44,7 @@ if __name__ == "__main__":
 
     # Generate dataset
     L = 64
-    n = 500
+    n = 600
     order = 3
     X_img, modes = generate_laplacian_data(size=n, L=L, order=order)
 
@@ -69,7 +70,7 @@ if __name__ == "__main__":
     bic_psa = bic((1, 2, 1, 2, 2, 1) + (L * L - 9,), eigval, n)
 
     # Plot true Laplacian eigenmodes
-    fig, axes = plt.subplots(3, 9)
+    fig, axes = plt.subplots(4, 9)
     for j, ax in enumerate(axes[0]):
         ax.imshow((modes[j]))
         ax.set_xticklabels([])
@@ -84,10 +85,10 @@ if __name__ == "__main__":
         ax.axis('off')
 
     # Plot rotated principal components (via orthogonal projection of true eigenmodes into principal subspaces)
-    axes[2, 0].imshow((eigvec[:, 0]).reshape(L, L))
+    axes[2, 0].imshow(-(eigvec[:, 0]).reshape(L, L))
     axes[2, 1].imshow((eigvec[:, 1:3] @ eigvec[:, 1:3].T @ modes[1].flatten()).reshape(L, L))
     axes[2, 2].imshow((eigvec[:, 1:3] @ eigvec[:, 1:3].T @ modes[2].flatten()).reshape(L, L))
-    axes[2, 3].imshow((-eigvec[:, 3]).reshape(L, L))
+    axes[2, 3].imshow((eigvec[:, 3]).reshape(L, L))
     axes[2, 4].imshow((eigvec[:, 4:6] @ eigvec[:, 4:6].T @ modes[4].flatten()).reshape(L, L))
     axes[2, 5].imshow((eigvec[:, 4:6] @ eigvec[:, 4:6].T @ modes[5].flatten()).reshape(L, L))
     axes[2, 6].imshow((eigvec[:, 6:8] @ eigvec[:, 6:8].T @ modes[6].flatten()).reshape(L, L))
@@ -97,6 +98,46 @@ if __name__ == "__main__":
         ax.set_xticklabels([])
         ax.set_yticklabels([])
         ax.axis('off')
+
+    # Plot rotated principal components (via ICA)
+    axes[3, 0].imshow(-(eigvec[:, 0]).reshape(L, L))
+    ica = FastICA()
+    X_proj = X @ eigvec[:, 1:3]
+    plt.figure()
+    plt.scatter(*X_proj.T)
+    plt.title("PS2")
+    plt.show()
+    ica.fit(X_proj)
+    U_ica = ica.components_ @ eigvec[:, 1:3].T
+    axes[3, 1].imshow(-U_ica[1].reshape(L, L))
+    axes[3, 2].imshow(-U_ica[0].reshape(L, L))
+    axes[3, 3].imshow((eigvec[:, 3]).reshape(L, L))
+    ica = FastICA()
+    X_proj = X @ eigvec[:, 4:6]
+    plt.figure()
+    plt.scatter(*X_proj.T)
+    plt.title("PS2")
+    plt.show()
+    ica.fit(X_proj)
+    U_ica = ica.components_ @ eigvec[:, 4:6].T
+    axes[3, 4].imshow(-U_ica[0].reshape(L, L))
+    axes[3, 5].imshow(U_ica[1].reshape(L, L))
+    ica = FastICA()
+    X_proj = X @ eigvec[:, 6:8]
+    plt.figure()
+    plt.scatter(*X_proj.T)
+    plt.title("PS2")
+    plt.show()
+    ica.fit(X_proj)
+    U_ica = ica.components_ @ eigvec[:, 6:8].T
+    axes[3, 6].imshow(U_ica[0].reshape(L, L))
+    axes[3, 7].imshow(U_ica[1].reshape(L, L))
+    axes[3, 8].imshow(-(eigvec[:, 8]).reshape(L, L))
+    for ax in axes[3]:
+        ax.set_xticklabels([])
+        ax.set_yticklabels([])
+        ax.axis('off')
+    plt.show()
 
     # Generate samples from the second, fourth and fifth principal subspace (2D)
     fig, axes = plt.subplots(3, 25)
